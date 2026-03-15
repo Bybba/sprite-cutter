@@ -55,7 +55,8 @@ func main() {
 	statusLabel.Wrapping = fyne.TextWrapWord
 
 	// Кнопка запуска
-	processBtn := widget.NewButton("Нарезать спрайты", func() {
+	var processBtn *widget.Button
+	processBtn = widget.NewButton("Нарезать спрайты", func() {
 		// Проверяем, что поля заполнены
 		if inputEntry.Text == "" {
 			dialog.ShowInformation("Ошибка", "Выберите входной файл", myWindow)
@@ -72,16 +73,13 @@ func main() {
 
 		// Запускаем обработку в горутине, чтобы не блокировать UI
 		go func() {
-			// Здесь можно добавить диалог выбора точки фона и порога,
-			// но пока используем (0,0) и порог 50
 			err := cutter.Process(
 				inputEntry.Text,
 				outputEntry.Text,
-				0, 0, // координаты фона (левый верхний угол)
+				0, 0,
 				cutter.DefaultThreshold,
 			)
 
-			// Обновляем UI через fyne.Do, так как мы в другой горутине
 			fyne.Do(func() {
 				processBtn.Enable()
 				if err != nil {
