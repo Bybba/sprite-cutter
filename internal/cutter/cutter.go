@@ -207,7 +207,7 @@ func SaveSpriteWithAlphaByColor(img image.Image, rect image.Rectangle, bgColor c
 // Process основная функция: загружает картинку, находит компоненты, группирует их в анимации
 // и сохраняет каждый спрайт в отдельный PNG с прозрачным фоном.
 // Имя файла формируется как sprite_<группа>_<кадр>.png.
-func Process(inputPath, outputDir string, bgX, bgY int, threshold uint32) error {
+func Process(inputPath, outputDir string, bgX, bgY int, threshold uint32, verticalThreshold, horizontalThreshold int) error {
 	// Открываем файл
 	file, err := os.Open(inputPath)
 	if err != nil {
@@ -228,8 +228,8 @@ func Process(inputPath, outputDir string, bgX, bgY int, threshold uint32) error 
 	components, _ := FindComponents(img, bgColor, threshold)
 
 	// Группируем их в анимации
-	// Параметры: вертикальный порог 20, горизонтальный порог 50 — можно вынести в аргументы
-	groups := GroupSprites(components, 20, 50)
+	// Параметры: вертикальный порог, горизонтальный порог
+	groups := GroupSprites(components, verticalThreshold, horizontalThreshold)
 
 	// Создаём выходную папку, если её нет
 	if err := os.MkdirAll(outputDir, os.ModePerm); err != nil {

@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"sprite-cutter/internal/cutter" // подставь своё название модуля!
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/app"
@@ -50,6 +52,14 @@ func main() {
 		}, myWindow)
 	})
 
+	vertEntry := widget.NewEntry()
+	vertEntry.SetText("20")
+	vertEntry.SetPlaceHolder("Вертикальный порог (пиксели)")
+
+	horizEntry := widget.NewEntry()
+	horizEntry.SetText("50")
+	horizEntry.SetPlaceHolder("Горизонтальный порог (пиксели)")
+
 	// Метка для статуса
 	statusLabel := widget.NewLabel("Готов к работе")
 	statusLabel.Wrapping = fyne.TextWrapWord
@@ -73,11 +83,30 @@ func main() {
 
 		// Запускаем обработку в горутине, чтобы не блокировать UI
 		go func() {
-			err := cutter.Process(
+			vert, err := strconv.Atoi(vertEntry.Text)
+			if err != nil {
+				fyne.Do(func() {
+					dialog.ShowError(fmt.Errorf("неверный вертикальный порог"), myWindow)
+					processBtn.Enable()
+					statusLabel.SetText("Ошибка: неверный порог")
+				})
+				return
+			}
+			horiz, err := strconv.Atoi(horizEntry.Text)
+			if err != nil {
+				fyne.Do(func() {
+					dialog.ShowError(fmt.Errorf("неверный горизонтальный порог"), myWindow)
+					processBtn.Enable()
+					statusLabel.SetText("Ошибка: неверный порог")
+				})
+				return
+			}
+			err = cutter.Process(
 				inputEntry.Text,
 				outputEntry.Text,
 				0, 0,
 				cutter.DefaultThreshold,
+				vert, horiz,
 			)
 
 			fyne.Do(func() {
@@ -98,6 +127,13 @@ func main() {
 		container.NewBorder(nil, nil, nil, openFileBtn, inputEntry),
 		widget.NewLabelWithStyle("Папка для сохранения", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
 		container.NewBorder(nil, nil, nil, openFolderBtn, outputEntry),
+		widget.NewLabelWithStyle("Пороги группировки", fyne.TextAlignLeading, fyne.TextStyle{Bold: true}),
+		container.NewGridWithColumns(2,
+			widget.NewLabel("Вертикальный:"),
+			vertEntry,
+			widget.NewLabel("Горизонтальный:"),
+			horizEntry,
+		),
 		processBtn,
 		statusLabel,
 	)
