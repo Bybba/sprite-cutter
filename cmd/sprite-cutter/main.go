@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"strings"
 
-	"sprite-cutter/internal/cutter" // путь должен совпадать с module в go.mod
+	"sprite-cutter/internal/cutter"
 )
 
 func main() {
