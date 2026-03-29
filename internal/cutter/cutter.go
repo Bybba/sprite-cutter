@@ -125,14 +125,8 @@ func FindComponents(img image.Image, bgColor color.RGBA, threshold uint32) ([]im
 
 // GroupSprites группирует спрайты в анимации на основе их позиции на исходном листе.
 // Сначала группирует по вертикали (строки), затем внутри строки разделяет по горизонтальному разрыву.
-// verticalThreshold   — максимальное вертикальное расстояние между нижней гранью предыдущего и верхней гранью следующего,
-//
-//	чтобы считать их одной строкой.
-//
-// horizontalThreshold — максимальное горизонтальное расстояние между правой гранью предыдущего и левой гранью следующего,
-//
-//	чтобы считать их одной анимацией в пределах строки.
-//
+// verticalThreshold   — максимальное вертикальное расстояние между нижней гранью предыдущего и верхней гранью следующего чтобы считать их одной строкой.
+// horizontalThreshold — максимальное горизонтальное расстояние между правой гранью предыдущего и левой гранью следующего, чтобы считать их одной анимацией в пределах строки.
 // Возвращает срез срезов прямоугольников: каждая внутренняя группа — кадры одной анимации.
 func GroupSprites(rects []image.Rectangle, verticalThreshold, horizontalThreshold int) [][]image.Rectangle {
 	if len(rects) == 0 {
@@ -148,29 +142,43 @@ func GroupSprites(rects []image.Rectangle, verticalThreshold, horizontalThreshol
 		return sorted[i].Min.X < sorted[j].Min.X
 	})
 
-	var groups [][]image.Rectangle
-	currentGroup := []image.Rectangle{sorted[0]}
-
+	// 1. Разбиваем на строки (кластеризация по вертикали)
+	var rows [][]image.Rectangle
+	currentRow := []image.Rectangle{sorted[0]}
 	for i := 1; i < len(sorted); i++ {
-		prev := currentGroup[len(currentGroup)-1]
+		prev := currentRow[len(currentRow)-1]
 		curr := sorted[i]
-		verticalGap := curr.Min.Y - prev.Max.Y
-		horizontalGap := curr.Min.X - prev.Max.X
-		// Если вертикально близки И горизонтально не слишком далеко -> одна группа
-		if verticalGap < verticalThreshold && horizontalGap < horizontalThreshold {
-			currentGroup = append(currentGroup, curr)
+		// Вертикальное расстояние между верхними границами
+		if curr.Min.Y-prev.Min.Y < verticalThreshold {
+			currentRow = append(currentRow, curr)
 		} else {
-			groups = append(groups, currentGroup)
-			currentGroup = []image.Rectangle{curr}
+			rows = append(rows, currentRow)
+			currentRow = []image.Rectangle{curr}
 		}
 	}
-	groups = append(groups, currentGroup)
+	rows = append(rows, currentRow)
 
-	// Внутри каждой группы сортируем по X (кадры должны идти слева направо)
-	for _, group := range groups {
-		sort.Slice(group, func(i, j int) bool {
-			return group[i].Min.X < group[j].Min.X
+	// 2. В каждой строке группируем по горизонтальному разрыву
+	var groups [][]image.Rectangle
+	for _, row := range rows {
+		// Сортируем строку по X
+		sort.Slice(row, func(i, j int) bool {
+			return row[i].Min.X < row[j].Min.X
 		})
+		// Разбиваем на группы по горизонтали
+		currentGroup := []image.Rectangle{row[0]}
+		for i := 1; i < len(row); i++ {
+			prev := currentGroup[len(currentGroup)-1]
+			curr := row[i]
+			gap := curr.Min.X - prev.Max.X
+			if gap < horizontalThreshold {
+				currentGroup = append(currentGroup, curr)
+			} else {
+				groups = append(groups, currentGroup)
+				currentGroup = []image.Rectangle{curr}
+			}
+		}
+		groups = append(groups, currentGroup)
 	}
 	return groups
 }
